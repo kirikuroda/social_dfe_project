@@ -1,0 +1,366 @@
+# Variable descriptions for data/data.rda
+#
+# Only the variables used in the analysis are documented here. The data frames
+# also carry columns that are not analysed (raw Qualtrics metadata, page timing
+# and browser fields, and participant-level columns duplicated by joins).
+#
+# Load in R with: yaml::read_yaml(here("data/codebook.yaml"))
+
+df_options:
+  description: >
+    Payoff distributions and trial type for each choice option (one row per option).
+  n_rows: 40
+  variables:
+    option_id:
+      description: Unique option identifier (1-based index).
+      type: integer
+      range: 1–40
+    v_a_high:
+      description: High payoff value for option A.
+      type: numeric
+      unit: points
+    v_a_low:
+      description: Low payoff value for option A.
+      type: numeric
+      unit: points
+    p_a_high:
+      description: Probability of the high payoff for option A (0.5 for attention checks).
+      type: numeric
+      values: [0.1, 0.5, 0.9]
+    p_a_low:
+      description: Probability of the low payoff for option A (= 1 − p_a_high).
+      type: numeric
+      values: [0.1, 0.5, 0.9]
+    v_b_high:
+      description: High payoff value for option B.
+      type: numeric
+      unit: points
+    v_b_low:
+      description: Low payoff value for option B.
+      type: numeric
+      unit: points
+    p_b_high:
+      description: Probability of the high payoff for option B (0.5 for attention checks).
+      type: numeric
+      values: [0.1, 0.5, 1.0]
+    p_b_low:
+      description: Probability of the low payoff for option B (= 1 − p_b_high).
+      type: numeric
+      values: [0.0, 0.5, 0.9]
+    trial_type:
+      description: Trial type determined by the riskiness of option B.
+      type: character
+      values:
+        risky_risky: Both options are risky (p_b_high = 0.1).
+        risky_safe: Option A is risky; option B is safe (p_b_high = 1.0).
+        attention_check: Attention check trial with a clearly dominant option (all p = 0.5).
+    rare_outcome:
+      description: >
+        Whether the rare outcome (p = 0.1) is the high or low payoff for option A.
+        NA for attention check trials.
+      type: character
+      values:
+        large: Rare outcome is the high payoff (p_a_high = 0.1).
+        small: Rare outcome is the low payoff (p_a_high = 0.9).
+
+df_practice:
+  description: >
+    Payoff distributions for the options used in the practice trials
+    (one row per option).
+  n_rows: 2
+  variables:
+    option_id:
+      description: Unique practice option identifier (1-based index).
+      type: integer
+      range: 1–2
+    v_a_high:
+      description: High payoff value for option A.
+      type: numeric
+      unit: points
+    v_a_low:
+      description: Low payoff value for option A.
+      type: numeric
+      unit: points
+    p_a_high:
+      description: Probability of the high payoff for option A.
+      type: numeric
+      values: [0.5]
+    p_a_low:
+      description: Probability of the low payoff for option A (= 1 − p_a_high).
+      type: numeric
+      values: [0.5]
+    v_b_high:
+      description: High payoff value for option B.
+      type: numeric
+      unit: points
+    v_b_low:
+      description: Low payoff value for option B.
+      type: numeric
+      unit: points
+    p_b_high:
+      description: Probability of the high payoff for option B.
+      type: numeric
+      values: [0.5]
+    p_b_low:
+      description: Probability of the low payoff for option B (= 1 − p_b_high).
+      type: numeric
+      values: [0.5]
+    trial_type:
+      description: Trial type; always "practice" for this data frame.
+      type: character
+      values:
+        practice: Practice trial shown before the main task.
+
+df_participants:
+  description: >
+    One row per participant after all exclusions (N = 312).
+    Exclusion steps: incomplete sessions, dropout/timeout, attention check failures,
+    bot detection, small groups.
+  n_rows: 312
+  variables:
+    subject_id:
+      description: Unique participant identifier (Prolific ID).
+      type: character
+    condition:
+      description: Experimental condition.
+      type: factor
+      levels: [group, solo]
+    session_id:
+      description: Data collection session identifier.
+      type: character
+    is_dropout_other:
+      description: Whether the session ended because another group member dropped out.
+      type: logical
+    is_dropout_self:
+      description: Whether the participant themselves dropped out during the task.
+      type: logical
+    is_matching_timeout:
+      description: Whether a group matching timeout occurred before the task began.
+      type: logical
+    is_quiz_failed:
+      description: Whether the participant failed the comprehension quiz.
+      type: logical
+    count_quiz_failure:
+      description: Number of times the comprehension quiz was failed.
+      type: integer
+    completion_code:
+      description: Prolific completion code (all retained participants = "C9T06BCN").
+      type: character
+    payoff_base:
+      description: Base payment (GBP).
+      type: numeric
+      unit: GBP
+    payoff_task:
+      description: Performance-based bonus from the main task (GBP).
+      type: numeric
+      unit: GBP
+    payoff_bonus:
+      description: Referral or additional bonus payment (GBP).
+      type: numeric
+      unit: GBP
+    datetime_start:
+      description: Session start timestamp (UTC).
+      type: character
+    datetime_finish:
+      description: Session end timestamp (UTC).
+      type: character
+
+df_trials:
+  description: >
+    One row per participant × trial; attention check trials and excluded participants
+    removed (N_participants = 312, N_trials = 11,232). Attention check trials are
+    identified by trial_type in df_options (option_id 37–40), not by any per-trial
+    flag in the raw oTree export.
+  n_rows: 11232
+  variables:
+    subject_id:
+      description: Unique participant identifier.
+      type: character
+    trial_number:
+      description: >
+        Trial index within participant, as presented (1-based). Runs 1–40 with gaps,
+        because the four attention check trials were removed; 36 trials remain per
+        participant.
+      type: integer
+      range: 1–40
+    option_id:
+      description: Option set used in this trial. Links to df_options.
+      type: integer
+      range: 1–36
+    trial_type:
+      description: Trial type.
+      type: factor
+      levels: [risky_safe, risky_risky]
+    rare_outcome:
+      description: Whether the rare outcome (p = 0.1) is the high or low payoff.
+      type: character
+      values:
+        large: Rare outcome is the high payoff (p_a_high = 0.1).
+        small: Rare outcome is the low payoff (p_a_high = 0.9).
+    condition:
+      description: Experimental condition.
+      type: factor
+      levels: [group, solo]
+    choice_self:
+      description: Participant's final choice (1 = chose B, 0 = chose A).
+      type: integer
+      values: [0, 1]
+    n_samples_self:
+      description: Number of samples drawn before making the consequential choice.
+      type: integer
+      range: 2–40
+    position:
+      description: >
+        Left-right display order of the two options on screen, randomized per trial
+        (1 = A on the left, 0 = A on the right). Present in both conditions.
+      type: integer
+      values: [0, 1]
+    group_id:
+      description: >
+        Group identifier, unique across sessions (interaction of session_id and
+        raw group_id). NA for the solo condition.
+      type: character
+    player_id:
+      description: Player slot assigned at session start. Not equivalent to response rank.
+      type: integer
+    choice_other:
+      description: >
+        Co-player's final choice as seen by this participant (group condition only).
+        Stored as a list string in the raw data; not parsed here.
+      type: character
+    n_samples_other:
+      description: Number of samples drawn by the co-player (group condition only).
+      type: character
+    rt_self:
+      description: Reaction time for the final choice (ms).
+      type: numeric
+      unit: ms
+    is_real_round:
+      description: Whether this trial was randomly selected for the bonus payoff calculation.
+      type: logical
+    payoff_round:
+      description: Points earned in this trial (relevant only when is_real_round = TRUE).
+      type: numeric
+      unit: points
+
+df_sampling:
+  description: >
+    One row per sample draw; derived from df_trials by unnesting sampling sequences
+    (N_total = 88,349 samples).
+  n_rows: 88349
+  variables:
+    subject_id:
+      description: Unique participant identifier.
+      type: character
+    trial_number:
+      description: Trial index within participant (1-based).
+      type: integer
+    sample_id:
+      description: Within-trial sample index (1-based, max = 40).
+      type: integer
+      range: 1–40
+    option_id:
+      description: Option set used in this trial. Links to df_options.
+      type: integer
+    sampled_option:
+      description: Which option was sampled at this step (1 = B, 0 = A).
+      type: integer
+      values: [0, 1]
+    sampled_option_label:
+      description: Which option was sampled at this step as a label.
+      type: character
+      values: [a, b]
+    sampled_outcome:
+      description: Payoff value observed at this sample.
+      type: numeric
+      unit: points
+    sequence_a:
+      description: >
+        Cumulative outcome sequence for option A up to this sample step.
+        Each element is a numeric payoff or NA (if option A not yet sampled).
+      type: numeric
+    sequence_b:
+      description: >
+        Cumulative outcome sequence for option B up to this sample step.
+      type: numeric
+    rt_sampling:
+      description: Reaction time for this sample draw (ms).
+      type: numeric
+      unit: ms
+    condition:
+      description: Experimental condition.
+      type: character
+      values: [solo, group]
+
+df_questionnaire:
+  description: >
+    Post-task questionnaire responses, one row per participant after all exclusions
+    (N = 312).
+  n_rows: 312
+  variables:
+    subject_id:
+      description: Unique participant identifier (Prolific ID). Links to df_participants.
+      type: character
+    condition:
+      description: Experimental condition, joined from df_participants.
+      type: factor
+      levels: [solo, group]
+    age:
+      description: Self-reported age.
+      type: numeric
+      range: 19–45
+      unit: years
+    gender:
+      description: Self-reported gender, recoded from numeric codes to labels.
+      type: character
+      values:
+        man: Numeric code 1.
+        woman: Numeric code 2.
+        nonbinary: Numeric code 3.
+        noresponse: Numeric code 4 (prefer not to say).
+    social_info_use:
+      description: >
+        "Did you consider other players' choices when deciding which lottery to
+        play?" Asked in the group condition only; NA for solo participants.
+      type: numeric
+      range: 1–6
+    choose_after_others:
+      description: >
+        "Did you want to wait to see other players' choices before playing a
+        lottery?" Group condition only; NA for solo participants.
+      type: numeric
+      range: 1–7
+    delay_choice:
+      description: >
+        "Did you intentionally delay your choice to observe other players'
+        choices?" Group condition only; NA for solo participants.
+      type: numeric
+      range: 1–7
+    choice_timing:
+      description: >
+        "Did you want to answer earlier or later than other players?"
+        Group condition only; NA for solo participants.
+      type: numeric
+      range: 1–7
+    suspicion_others:
+      description: >
+        "Did you feel that other players were real participants or bots during the
+        task?" Group condition only; NA for solo participants.
+      type: numeric
+      range: 1–7
+    social_DO:
+      description: >
+        Qualtrics display order of the five social items above.
+        Group condition only.
+      type: character
+    strategy:
+      description: >
+        Open-ended description of the strategy used in the task; also carries the
+        "pigeon" honeypot used for bot screening. Optional, so NA for participants
+        who did not answer.
+      type: character
+    comment:
+      description: >
+        Open-ended free comment; also carries the "rabbit" honeypot used for bot
+        screening. Optional, so NA for participants who did not answer.
+      type: character

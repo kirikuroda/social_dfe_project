@@ -1,0 +1,103 @@
+{{ block title }}
+  Consent form
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+  <style>
+    iframe {
+      border: solid 1px #333333;
+    }
+  </style>
+{{ endblock }}
+
+{{ block content }}
+  <br>
+  <p>Thank you for your interest in our study. Please read the study information below.</p>
+  <iframe width="940" height="800" src="/static/social_gambling/consent/consent.pdf"></iframe>
+  <br><br>
+  <div class="alert alert-warning" role="alert">
+    <ul>
+      <p><li>You will need to use a keyboard and mouse (or touchpad) later. You cannot complete the task on a smartphone or tablet device.</li></p>
+      <p><li>This study contains comprehension questions. If you fail these <b>twice</b> or drop out of the study before finishing the task, you will not receive any reward.</li></p>
+    </ul>
+  </div>
+  <br>
+  <hr>
+  <br>
+  <h2><b>To take part in the study, please tick the two boxes below and click on "Next".</b></h2>
+  <p>*Required</p>
+  <div id="participationAlert" class="alert alert-secondary" role="alert">
+    <div class="form-check">
+      <input name="consent_participation" class="form-check-input" type="checkbox" id="participationConsent" required>
+      <label class="form-check-label" for="participationConsent">
+        <b>*1. Consent to participate in the study</b>
+        <ul>
+          <p>
+            <li>I have been informed of the “Lottery Task” study, its procedure, significance, scope and risks, and I have read and understood the study information. </li>
+            <li>I have had the opportunity to clarify any questions.</li>
+            <li>I have the right to request further information about the study at any time.</li>
+            <li>I voluntarily agree to participate in the study as described in the study information.</li>
+            <li>I have been informed that I can withdraw from this study at any time without any penalty.</li>
+          </p>
+        </ul>
+      </label>
+    </div>
+  </div>
+  <div id="dataAlert" class="alert alert-secondary" role="alert">
+    <div class="form-check">
+      <input name="consent_data" class="form-check-input" type="checkbox" id="dataConsent" required>
+      <label class="form-check-label" for="dataConsent">
+        <b>*2. Declaration of consent under data protection law</b>
+        <ul>
+          <p>
+            <li>I have read and understood the study information.</li>
+            <li>I have been informed that my consent is voluntary and that I may withdraw it before the code list is deleted. I have also been informed of my further rights to information, correction, deletion, data transferability, as well as complaint and contact options.</li>
+            <li>I consent to the collection, processing, and analysis of my data by the Max Planck Institute for Human Development in the research project of the “Lottery Task” study.</li>
+            <li>The collected data may be used by the Max Planck Institute for Human Development in the context of scientific research for the purpose explained.</li>
+            <li>I consent to research data being stored without mentioning my name for the publication of research results in scientific journals for their review (reanalyses).</li>
+            <li>I consent to my anonymized research data being analyzed for related research questions for scientific purposes as described in the study information.</li>
+            <li>I consent to my anonymized research data being available for scientific analysis as described in the study information even after the study has ended.</li>
+            <li>I consent to my anonymized research data being uploaded to the Open Science Framework as described in the study information and used worldwide.</li>
+            <li>I consent to my anonymized research data being available for scientific analysis in the Open Science Framework as described in the study information, even after the end of the study.</li>
+          </p>
+        </ul>
+      </label>
+    </div>
+  </div>
+  <br>
+  <button id="next_button" class="otree-btn-next btn btn-primary btn-lg">Next</button>
+  <br><br><br><br><br>
+{{ endblock }}
+
+{{ block scripts }}
+  <script>
+    let isClicked1 = false;
+    let isClicked2 = false;
+    let box1 = document.getElementById("participationAlert");
+    let box2 = document.getElementById("dataAlert");
+    let check1 = document.getElementById("participationConsent");
+    let check2 = document.getElementById("dataConsent");
+
+    check1.addEventListener("change", function() {
+      isClicked1 = this.checked;
+      changeBoxColor(check1, box1);
+    })
+    check2.addEventListener("change", function() {
+      isClicked2 = this.checked;
+      changeBoxColor(check2, box2);
+    })
+
+    let nextButton = document.getElementById("next_button");
+
+    changeBoxColor = function(check, box) {
+      if (check.checked) {
+        box.classList.remove("alert-secondary");
+        box.classList.add("alert-success");
+      } else {
+        box.classList.remove("alert-success");
+        box.classList.add("alert-secondary");
+      }
+    }
+  </script>
+{{ endblock }}

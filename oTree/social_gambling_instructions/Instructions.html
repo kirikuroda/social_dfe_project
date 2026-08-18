@@ -1,0 +1,246 @@
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+  <style>
+    .col-form-label {
+      font-weight: bold;
+    }
+    .alert-secondary {
+      border: 1px solid #333;
+      background-color: transparent;
+    }
+    #google_slide, #comprehension_questions {
+      display: none;
+    }
+    img {
+      border: solid 1px;
+    }
+    #jspsych-instructions-back, #jspsych-instructions-next {
+      font-family: Roboto;
+    }
+  </style>
+  <script src="https://unpkg.com/jspsych@8.2.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-preload@2.0.0"></script>
+  <script type="text/javascript" src="{{ static 'social_gambling/js/node_modules/@jspsych/plugin-instructions/dist/index.browser.js' }}"></script>
+  <link href="https://unpkg.com/jspsych@8.2.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+{{ endblock }}
+
+{{ block content }}
+  {{ if player.count_quiz_failure == 0 }}
+    <p>Please read the slides first, and then answer comprehension questions.</p>
+    <div class="alert alert-warning" role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-volume-mute-fill" viewBox="0 0 16 16">
+        <path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06m7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0"/>
+      </svg>    
+      <p>The slides are narrated to make them easier to read. If you do not wish to hear the narration, please mute your audio device.</p>
+    </div>
+  {{ endif }}
+  {{ if player.count_quiz_failure > 0 }}
+    <div class="alert alert-danger" role="alert">
+      <p>
+        Please correct the error(s) and resubmit your answers.
+        <ul>
+          <li>You can re-read the slides if you are not sure.</li>
+          <li>If you fail again, you will not be allowed to start the task.</li>
+        </ul>
+      </p>
+    </div>
+  {{ endif }}
+  <br>
+  {{ if player.count_quiz_failure == 0 }}
+    <div id='display_jspsych'></div>
+  {{ endif }}
+
+  <div id="comprehension_questions">
+    <br>
+    <hr>
+    <br>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+      <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+      </symbol>
+      <symbol id="exclamation-triangle-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+      </symbol>
+    </svg>
+    
+    <h1><b>Comprehension questions</b></h1>
+    
+    {{ if player.count_quiz_failure == 0 }}
+      <p>Please select the correct answer to each question below and click on "Submit" at the bottom. You can submit your answers up to <b>twice</b>.</p>
+    {{ endif }}
+    
+    <div class="alert alert-secondary" role="alert">
+      {{ formfields }}
+    </div>
+    <br>
+    {{ if player.count_quiz_failure == 0 }}
+      <button class="otree-btn-next btn btn-primary btn-lg">Submit</button>
+    {{ endif }}
+    {{ if player.count_quiz_failure > 0 }}
+      <script>
+        let element = document.getElementsByClassName("otree-form-errors alert alert-danger")[0];
+        element.remove();
+      </script>
+      <p>
+        <div class="alert alert-primary" role="alert">
+          Final check: Have you corrected your answer(s)?
+        </div>
+      </p>
+      <button class="otree-btn-next btn btn-primary btn-lg">Resubmit</button>
+    {{ endif }}
+    <br><br><br><br><br>
+    
+    <!-- Correct/Wrong -->
+    {{ if player.count_quiz_failure > 0 }}
+      <script>
+        let items = document.getElementsByClassName("form-control-errors");
+        let regex = new RegExp("Correct!");
+        for (let i = 0; i < items.length; i++) {                
+          let item = items[i];
+          if (regex.test(item.innerText)) {
+            item.innerHTML = `
+              <div class="alert alert-success d-flex align-items-center" role="alert">
+                <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+                <div>Correct!</div>
+              </div>
+            `;
+          } else {
+            let text = item.innerText;
+            item.innerHTML = `
+              <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:"><use xlink:href="#exclamation-triangle-fill"/></svg>
+                <div>${text}</div>
+              </div>
+            `;
+          }
+        }
+      </script>
+    {{ endif }}
+  </div>
+{{ endblock }}
+
+{{ block scripts }}
+  
+  
+  <script>
+    /* initialize jsPsych */
+    var jsPsych = initJsPsych({
+      display_element: 'display_jspsych',
+    });
+
+    /* create timeline */
+    var timeline = [];
+
+    pages = [];
+    video_sampling_path = `/static/social_gambling/inst/video/sampling.mp4`;
+    video_choice_path = `/static/social_gambling/inst/video/choice.mp4`;
+    img_paths = [];
+    audio_paths = [];
+    video_paths = [];
+    video_paths.push(video_sampling_path);
+    video_paths.push(video_choice_path);
+
+    if (js_vars.condition === "personal") {
+      for (let i = 0; i < 28; i++) {
+        img_path = `/static/social_gambling/inst/personal_condition/slide_${i + 1}.png`;
+        img_paths.push(img_path);
+        if (i === 15) {
+          pages.push(`<video id="samplingVideo" src=${video_sampling_path} height="529" controls muted autoplay style="display: block;"></video>`);
+        } else if (i === 18) {
+          pages.push(`<video id="choiceVideo" src=${video_choice_path} height="529" controls muted autoplay style="display: block;"></video>`);
+        } else {
+          if (i === 0) {
+            pages.push(`<img src=${img_path}></img>`);
+          } else {
+            audio_path = `/static/social_gambling/inst/personal_audio/audio_${i + 1}.mp4`;
+            audio_paths.push(audio_path);
+            pages.push(`<img src=${img_path}></img><audio src=${audio_path} autoplay></audio>`);
+          }
+        }
+      };
+    } else if (js_vars.condition === "social") {
+      for (let i = 0; i < 41; i++) {
+        img_path = `/static/social_gambling/inst/social_condition/slide_${i + 1}.png`;
+        img_paths.push(img_path);
+        if (i === 15) {
+          pages.push(`<video id="samplingVideo" src=${video_sampling_path} height="529" controls muted autoplay style="display: block;"></video>`);
+        } else if (i === 18) {
+          pages.push(`<video id="choiceVideo" src=${video_choice_path} height="529" controls muted autoplay style="display: block;"></video>`);
+        } else {
+          if (i === 0) {
+            pages.push(`<img src=${img_path}></img>`);
+          } else {
+            audio_path = `/static/social_gambling/inst/social_audio/audio_${i + 1}.mp4`;
+            audio_paths.push(audio_path);
+            pages.push(`<img src=${img_path}></img><audio src=${audio_path} autoplay></audio>`);
+          }
+        }
+      };
+    }
+
+    var preload = {
+      type: jsPsychPreload,
+      show_progress_bar: true,
+      images: img_paths,
+      audio: audio_paths,
+      video: video_paths
+    }
+    
+    let page_number = 0;
+
+    timeline.push(preload);
+
+    var trial = {
+      type: jsPsychInstructions,
+      pages: pages,
+      show_page_number: false,
+      allow_keys: false,
+      show_clickable_nav: true,
+      button_label_previous: "Prev",
+      button_label_next: "Next",
+      on_page_change: function(current_page) {
+        samplingVideo = document.getElementById("samplingVideo");
+        choiceVideo = document.getElementById("choiceVideo");
+        button = document.getElementById("jspsych-instructions-next");
+        if (samplingVideo !== null) {
+          if (is_movie_played_1 === false) {
+            button.disabled = "disabled";
+          }
+          samplingVideo.addEventListener("ended", function() {
+            button.disabled = false;
+            is_movie_played_1 = true;
+            this.play();
+          });
+        }
+        if (choiceVideo !== null) {
+          if (is_movie_played_2 === false) {
+            button.disabled = "disabled";
+          }
+          choiceVideo.addEventListener("ended", function() {
+            button.disabled = false;
+            is_movie_played_2 = true;
+            this.play();
+          });
+        }
+        if (current_page === img_paths.length - 1) {
+          document.getElementById("comprehension_questions").style.display = "block";
+        }
+      }
+    }
+
+    is_movie_played_1 = false;
+    is_movie_played_2 = false;
+
+    timeline.push(trial);
+
+    /* start the experiment */
+    jsPsych.run(timeline);
+
+  </script>
+
+  {{ if player.count_quiz_failure > 0 }}
+    <script>
+      document.getElementById("comprehension_questions").style.display = "block";
+    </script>
+  {{ endif }}
+{{ endblock }}

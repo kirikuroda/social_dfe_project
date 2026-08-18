@@ -1,0 +1,114 @@
+{% extends "otree/Base_UserFacing.html" %}
+
+{% block head_title %}{% endblock %}
+{% block tab_title_data %}{% include 'otree/includes/debug_info_tab_title.html' %}{% endblock %}
+{% comment %}
+NOTE:
+we should keep this page as simple as possible so that 'view source' is friendly
+i removed many linebreaks to make output HTML cleaner
+{% endcomment %}
+{% block body_main %}
+    {% if is_defined('view.is_debug') and view.is_debug %}
+    <script>
+    // Shows alert if it exists (for errors after debug_info loads).
+    // Also sets flag which debug_info checks (for errors before it loads).
+    function _showJsErrorAlert() {
+        window._hasJsErrors = true;
+        var el = document.getElementById('_js-errors-alert');
+        if (el) el.style.display = 'block';
+    }
+    window.addEventListener('error', _showJsErrorAlert);
+    window.addEventListener('unhandledrejection', _showJsErrorAlert);
+    </script>
+    {% endif %}
+    {% if is_defined('js_vars') and js_vars %}<script>var js_vars = {{ js_vars }};</script>{% endif %}
+    {% if use_standard_layout %}
+    <div class="otree-body container">
+        <h2 class="otree-title page-header" id="_otree-title">{% block title %}{% endblock %}</h2>
+        {% if view.remaining_timeout_seconds() != None %}
+          {% with form_element_id="form" %}
+            {% include 'otree/includes/TimeLimit.html'  %}
+          {% endwith %}
+        {% endif %}
+    {% endif %}
+        {% if is_defined('_trials_incomplete') and _trials_incomplete %}
+            <div class="otree-form-errors alert alert-danger">
+                {{ "Cannot proceed to the next page until trials are completed. Check the server log for errors." }}
+            </div>
+        {% endif %}
+        {% if form.errors %}
+            <div class="otree-form-errors alert alert-danger">
+              {% if form.non_field_error %}
+                {{ form.non_field_error }}
+              {% else %}
+                {{ "Please fix the errors."|gettext }}
+              {% endif %}
+            </div>
+        {% endif %}
+        <form class="otree-form"
+              role="form" id="form" autocomplete="off" method="post"
+              {% if has_trial %}action="javascript:void(0);"{% endif %}
+        >
+            <script src="{% static 'otree/js/formInputs.js' %}"></script>
+            {% if use_standard_layout %}<div class="otree-content">{% endif %}
+<!-- (((((((((((((((((((((((((((((((((((((((((((((((((((((((( CONTENT BLOCK -->
+              {% block content %}{% endblock %}
+<!-- )))))))))))))))))))))))))))))))))))))))))))))))))))))))) END OF CONTENT BLOCK -->
+            {% if use_standard_layout %}</div>{% endif %}
+        </form>
+        {% if has_trial %}
+            {# for trials, we have 2 forms on the page: the regular #form,
+            whose submit is disabled, and this special form,
+            which can be submitted. it should be empty, because we don't want
+            trial fields to be submitted to the server anyway.
+            #}
+            <form method="post" id="_trials-submit-form"></form>
+        {% endif %}
+        <br/>
+    {% if use_standard_layout %}</div>{% endif %}
+    
+    {# need the check for projects with old MTurkLandingPage #}
+    {% comment %}
+    debug info should go outside otree-body because if the user sets
+    the height of otree-body to 100% that shouldn't include the debug info.
+
+    {% endcomment %}
+{% endblock %}
+{% block debug_info %}
+    {% if is_defined('view.is_debug') and view.is_debug %}
+        <br>
+        {% include 'otree/includes/debug_info.html' %}
+    {% endif %}
+{% endblock %}
+{% block internal_scripts %}
+
+    {{ super() }}
+    <script id="websocket-redirect" src="{% static 'otree/js/page-websocket-redirect.js' %}"
+            data-socket-url="{{ view.socket_url() }}"
+            data-is-debug="{{ view.is_debug || '' }}"
+    ></script>
+    {% if view.remaining_timeout_seconds() != None %}
+        {% include 'otree/includes/TimeLimit.js.html' %}
+    {% endif %}
+    <script src="{% static 'otree/js/back_button.js' %}"></script>
+    {% if view.preserve_unsubmitted_inputs %}
+        <script src="{% static 'otree/js/preserve_unsubmitted_inputs.js' %}"></script>
+    {% endif %}
+{% endblock %}
+
+{% block live %}
+  {% if has_live_method %}
+    <form id="liveform"></form>
+    <script src="{% static 'otree/js/live.js' %}" id="otree-live" data-socket-url="{{ view.live_url() }}"></script>
+  {% endif %}
+{% endblock %}
+
+
+{% block trial %}
+  {% if has_trial %}
+    <script>var TRIALS = {{ trials_json }}; var _TRIALS_SSE = {{ _trials_use_roundtrip_mode }}</script>
+    <script src="{% static 'otree/js/trials-pre.js' %}" id="otree-trial" data-socket-url="{{ view.trial_url() }}"></script>
+    <script src="{% static 'otree/js/otree-front.js' %}"></script>
+    <script src="{% static 'otree/js/trials-core.js' %}"></script>
+  {% endif %}
+{% endblock %}

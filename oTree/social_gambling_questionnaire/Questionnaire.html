@@ -1,0 +1,61 @@
+{{ block title }}
+  Please answer the following questions.
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+  <style>
+    .col-form-label {
+      font-weight: bold;
+    }
+    .alert-secondary {
+      border: 1px solid #333;
+      background-color: transparent;
+    }
+  </style>
+{{ endblock }}
+
+{{ block content }}
+  {{ for field in form }}
+    {{ if field.name == "age" }}
+      <br><br>
+    {{ endif }}
+    {{ if field.name != "gender" and field.name != "gender_self_describe" }}
+        <div class="alert alert-secondary" role="alert">
+          <div class="col-form-label">{{ field.label }}</div>
+          {{ field }}
+        </div>
+    {{ endif }}
+    {{ if field.name == "gender" }}
+      <div class="alert alert-secondary" role="alert">
+        <div class="col-form-label">{{ field.label }}</div>
+          {{ field }}
+          {{ form.gender_self_describe }}
+      </div>
+    {{ endif }}
+  {{ endfor }}
+  <br>
+  <button class="otree-btn-next btn btn-primary btn-lg">Next</button>
+  <br><br><br><br><br>
+{{ endblock }}
+
+{{ block scripts }}
+  <script>
+    function toggleTextbox() {
+          var genderRadio = document.getElementById("id_gender-4");
+          var textbox = document.getElementById("id_gender_self_describe");
+          if (genderRadio.checked) {
+              textbox.disabled = false;
+          } else {
+              textbox.disabled = true;
+              textbox.value = "";
+          }
+      }
+      document.addEventListener("DOMContentLoaded", function() {
+          toggleTextbox();
+          document.querySelectorAll("input[name='gender']").forEach(function(radio) {
+              radio.addEventListener("change", toggleTextbox);
+          });
+      });
+  </script>
+{{ endblock }}

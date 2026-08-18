@@ -1,0 +1,9 @@
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+  <p>You have been identified as a bot.</p>
+  <br>
+  {{ include "social_gambling/ReturnSubmission.html" }}
+{{ endblock }}

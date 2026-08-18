@@ -1,0 +1,27 @@
+{{ block title }}
+  You have answered all the questions correctly!
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+
+  <div class="alert alert-warning" role="alert">
+    <ul>
+      {{ if session.config.condition == C.PERSONAL_CONDITION }}
+        <p><li>Please practise 2 rounds to get used to the task.</li></p>
+        <p><li>The points from the practice will not count towards today's reward.</li></p>
+      {{ endif }}
+      {{ if session.config.condition == C.SOCIAL_CONDITION }}
+        <p><li>Before matching with four players, please practise 2 rounds to get used to the task.</li></p>
+        <p><li>You will not see other players' choices in the practice.</li></p>
+        <p><li>The points from the practice will not count towards today's reward.</li></p>
+      {{ endif }}
+    </ul>
+  </div>
+  <br>
+  <p>Please click on the button when ready.</p>
+  <button class="otree-btn-next btn btn-primary btn-lg">Start practice</button>
+{{ endblock }}
