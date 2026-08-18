@@ -1,0 +1,46 @@
+{{ block title }}
+  For security reasons, please click and solve the reCAPTCHA below.
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+  <div>
+    <input type="text" name="color_confirm" tabindex="-1" autocomplete="off" style="position: absolute; left: -9999px; opacity: 0;" aria-hidden="true">
+  </div>
+  <div>
+    <input type="text" name="food_confirm" tabindex="-1" autocomplete="off" style="position: absolute; left: -9999px; opacity: 0;" aria-hidden="true">
+  </div>
+  <div>
+    <input type="text" name="place_confirm" tabindex="-1" autocomplete="off" style="position: absolute; left: -9999px; opacity: 0;" aria-hidden="true">
+  </div>
+  <div class="g-recaptcha" data-sitekey="{{ RECAPTCHA_SITE_KEY }}" data-callback="verify_token"></div>
+  <br>
+  <button id="next_button" class="otree-btn-next btn btn-primary btn-lg" style="display: none;">Next</button>
+  <br><br><br><br><br>
+{{ endblock }}
+
+{{ block scripts }}
+
+  <!-- <script>
+    // debuging
+    window.addEventListener('load', function () {
+      document.querySelector('input[name="place_confirm"]').value = "bot@example.com";
+    });
+  </script> -->
+
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script>
+    function verify_token(response_token) {
+        liveSend({'response_token': response_token});
+    }
+    function liveRecv(data) {
+      if (data === "valid") {
+        const nextButton = document.getElementById("next_button");
+        nextButton.style.display = "block";
+      }
+    }
+  </script>
+{{ endblock }}

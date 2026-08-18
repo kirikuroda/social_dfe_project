@@ -1,0 +1,9 @@
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+  <p>Unfortunately, you have failed the comprehension questions twice, so you are not allowed to start the task. Thank you for your understanding.</p>
+  <br>
+  {{ include "social_gambling/ReturnSubmission.html" }}
+{{ endblock }}

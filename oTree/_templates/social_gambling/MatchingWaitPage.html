@@ -1,0 +1,68 @@
+{{ extends 'otree/WaitPage.html' }}
+
+{{ block styles }}
+  <style>
+    #seconds {
+      font-size: 30pt;
+      font-family: monospace !important;
+    }
+    #wait_message {
+      font-size: 20pt;
+      font-family: Roboto !important;
+    }
+  </style>
+{{ endblock }}
+
+{{ block content }}
+  <h2>Please wait a moment. Do not close this tab/window.</h2>
+  <h2>{{ subsession.n_waiting_players }} player(s) waiting</h2>
+  <!-- Timer -->
+  <body onLoad="disp()">
+    <p><div id="seconds"></div></p>
+  </body>
+  
+  <!-- Body -->
+  <div id="wait_message">
+    <div class="alert alert-secondary" role="alert">
+      {{ if is_timeout == 0 }}
+        <p>Once matching is complete, you will be taken to the next page, and the task will start automatically after 15 seconds.</p>
+        <p>If you are left waiting for longer than 5 minutes, the study will end. In this case, we will pay you the base fee plus a 5-minute waiting fee of £1.</p>
+      {{ endif }}
+      {{ if is_timeout == 1 }}
+        <p>No other participants showed up in time. Please wait a moment.</p>
+      {{ endif }}
+    </div>
+  </div>
+
+  <div class="game" style="width:350px; height:700px;"></div>
+{{ endblock }}
+
+{{ block scripts }}
+  <script>
+    const timeout = js_vars.timeout
+    const time_last_page = js_vars.time_last_page;
+    var start = new Date();
+    var hour = 0;
+    var min = 0;
+    var sec = 0;
+    var now = 0;
+    var datet = 0;
+    function disp(){
+      now = new Date();
+      datet = parseInt((now - time_last_page * 1000) / 1000);
+      // hour = parseInt(datet / 3600);
+      min = parseInt((datet / 60) % 60);
+      sec = String(datet % 60).padStart(2, "0");
+      var timer = min + ' min. ' + sec + ' sec. elapsed.';
+      seconds = document.getElementById("seconds")
+      seconds.textContent = timer
+      setTimeout("disp()", 1000);
+      if (datet >= timeout) {
+        window.location.reload();
+      }
+    }
+    window.setInterval(function () {
+      window.location.href = window.location.pathname + "?reload=1";
+    }, 10000);
+  </script>
+{{ endblock }}

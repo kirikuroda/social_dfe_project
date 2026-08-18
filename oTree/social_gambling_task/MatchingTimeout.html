@@ -1,0 +1,13 @@
+{{ block title }}
+  The number of players did not reach five.
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+  <p>Unfortunately, the study cannot be continued. Thank you for your participation.</p>
+  <br>
+  {{ include "social_gambling/NormalSubmission.html" }}
+{{ endblock }}

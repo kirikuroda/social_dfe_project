@@ -1,0 +1,67 @@
+{{ block title }}
+  <div id="my-timer" class="alert alert-warning" role="alert"></div>
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+  <style>
+    .otree-timer {
+        display: none;
+    }
+  </style>
+{{ endblock }}
+
+{{ block content }}
+  <audio id="audioPlayer" autoplay>
+    <source src="{{ static 'social_gambling/audio/matching.mp4' }}" type="audio/mpeg">
+  </audio>
+  <p>Matching is complete. You (ID: <span style="font-family: monospace;">{{ participant.code }}</span>) have been grouped with 4 players (IDs: <span style="font-family: monospace;">{{ codes }}</span>).</p>
+  <p><b>In the task, everyone will see each other's choices.</b> The task (= 40 rounds) will start automatically soon.</p>
+{{ endblock }}
+
+{{ block scripts }}
+  <script src="{{ static 'social_gambling/js/my_functions.js' }}"></script>
+  <script>
+    liveSendStarted();
+    document.addEventListener("DOMContentLoaded", function (event) {
+      $('.otree-timer__time-left').on('update.countdown', function (event) {
+        remainingTime = event.offset.totalSeconds;
+        function formatTime(seconds) {
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          const formattedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+          return `${minutes}:${formattedSeconds}`;
+        }
+        elem = document.getElementById("my-timer");
+        elem.innerHTML = `<h1>Time left to start the task: ${formatTime(remainingTime)}</h1>`;
+      });
+    });
+    
+    let isSubmitting = false;
+    $(function () {
+        var currentDate = new Date();
+        var remainingTimeoutSeconds = 15;
+        var milliseconds = Math.floor(remainingTimeoutSeconds * 1000);
+        $('.otree-timer__time-left').countdown(currentDate.valueOf() + milliseconds)
+            .on('finish.countdown', function (event) {
+                isSubmitting = true;
+            });
+    });
+
+    window.addEventListener("beforeunload", function (event) {
+      if (!isSubmitting) {
+        event.preventDefault();
+      }  
+    });
+
+    function sayReady() {
+      let msg = new SpeechSynthesisUtterance();
+      msg.lang = "en-EN";
+      msg.text = "Matching is complete. Please switch back to the window.";
+      window.speechSynthesis.speak(msg);
+    }
+    if (document.hidden) {
+      sayReady();
+    }
+  </script>
+{{ endblock }}

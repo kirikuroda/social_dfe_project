@@ -1,0 +1,14 @@
+{{ block title }}
+  Please start the task (40 rounds).
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+{{ endblock }}
+
+{{ block content }}
+  {{ include "social_gambling/FinalAlert.html" }}
+  <br>
+  <p>Please click on the button when ready.</p>
+  <button class="otree-btn-next btn btn-primary btn-lg">Start the task</button>
+{{ endblock }}

@@ -1,0 +1,71 @@
+{{ block title }}
+  <div id="my-timer" class="alert alert-warning" role="alert"></div>
+{{ endblock }}
+
+{{ block styles }}
+  {{ include C.MAIN_TEMPLATE }}
+  <style>
+    .otree-timer {
+        display: none;
+    }
+  </style>
+{{ endblock }}
+
+{{ block content }}
+  <p>On the next page, we will search for four players to match with you. This will take a few seconds.</p>
+  <div class="alert alert-warning" role="alert">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-clock-fill" viewBox="0 0 16 16">
+      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+    </svg>
+    <ul>
+      <p><li>If there are fewer than five players, you will be taken to the waiting room.</li></p>
+      <p><li>If you are left waiting for longer than five minutes, the study will end. In this case, you will receive the basic reward and an additional £1 for inconvenience.</li></p>
+    </ul>
+  </div>
+  <br>
+  <hr>
+  <br>
+  <p>Once matching is complete, the task will start automatically after 15 seconds.</p>
+  <p>After the matching, an audio announcement will be played so that you do not miss the start of the task.</p>
+  <!-- <br>
+  <div class="alert alert-warning" role="alert">
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-volume-mute-fill" viewBox="0 0 16 16">
+      <path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06m7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0"/>
+    </svg>    
+    <p>If you do not wish to hear the audio announcement, please mute your audio device.</p>
+  </div> -->
+  {{ include "social_gambling/FinalAlert.html" }}
+  <br>
+  <p>Please keep your eyes on the screen during the matching so that you do not miss the start of the task. Please click on the button when ready.</p>
+  <button class="otree-btn-next btn btn-primary btn-lg">Proceed to matching</button>
+  <br><br><br><br><br>
+{{ endblock }}
+
+{{ block scripts }}
+  <script>
+    document.addEventListener("DOMContentLoaded", function (event) {
+      $('.otree-timer__time-left').on('update.countdown', function (event) {
+        remainingTime = event.offset.totalSeconds;
+        function formatTime(seconds) {
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          const formattedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+          return `${minutes}:${formattedSeconds}`;
+        }
+        elem = document.getElementById("my-timer");
+        elem.innerHTML = `<h1>Please proceed to matching before time is up:<br><br>${formatTime(remainingTime)}</h1>`;
+      });
+    });
+    
+    let isSubmitting = false;
+    $(function () {
+        var currentDate = new Date();
+        var remainingTimeoutSeconds = 120;
+        var milliseconds = Math.floor(remainingTimeoutSeconds * 1000);
+        $('.otree-timer__time-left').countdown(currentDate.valueOf() + milliseconds)
+            .on('finish.countdown', function (event) {
+                isSubmitting = true;
+            });
+    });
+  </script>
+{{ endblock }}

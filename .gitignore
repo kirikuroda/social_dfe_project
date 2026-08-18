@@ -1,0 +1,42 @@
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+Rplots.pdf
+# Output (regenerable)
+output/*.rds
+output/fit/*
+output/figure/*
+output/table/*
+output/sim/*
+output/recovery/*
+!output/fit/.gitkeep
+!output/figure/.gitkeep
+!output/table/.gitkeep
+!output/sim/.gitkeep
+!output/recovery/.gitkeep
+# Data
+*.zip
+# Raw data is not distributed; analysis starts from data/data.rda
+data/raw/*
+!data/raw/.gitkeep
+# Intermediate objects (regenerable)
+data/*.rds
+# Preprocessing depends on data/raw/, so it is not distributed either
+analysis/00_preprocessing.R
+# OS
+.DS_Store
+# Local editor config
+.claude/
+CLAUDE.md
+# Stan compiled binaries (no extension; .stan sources are tracked)
+function/Stan/solo
+function/Stan/group_asocial_choice
+function/Stan/group_constant
+function/Stan/group_full
+function/Stan/group_full_2
+function/Stan/group_value_shaping
+function/Stan/*.hpp
+cat
+cat.pub
