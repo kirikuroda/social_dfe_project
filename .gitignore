@@ -36,6 +36,8 @@ function/Stan/group_asocial_choice
 function/Stan/group_constant
 function/Stan/group_full
 function/Stan/group_full_2
+function/Stan/group_full_smooth1
+function/Stan/group_constant_smooth1
 function/Stan/group_value_shaping
 function/Stan/*.hpp
 cat

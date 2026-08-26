@@ -459,7 +459,13 @@ beta_scale <- c(
 # to put the social-evidence-strength (beta_7 / eta_2) and alignment (beta_9 /
 # eta_3) coefficients on the same per-1-SD scale as the own-evidence terms, so
 # own vs social evidence is comparable within the group models.
-replay_social_group <- function(seg, k) {
+#
+# `smooth` is the Laplace constant added to both social counts before the
+# log-odds, and MUST match the constant hard-coded in the .stan file being
+# fitted: 0.1 for group_full.stan / group_constant.stan, 1.0 for their
+# *_smooth1.stan variants. Passing the wrong one would standardize |s_t| and
+# align by the SD of a different quantity than the model actually uses.
+replay_social_group <- function(seg, k, smooth = 0.1) {
   n_A_high <- 0
   n_A_low <- 0
   n_B_high <- 0
@@ -543,7 +549,7 @@ replay_social_group <- function(seg, k) {
         sqrt(var_A / n_A + var_B / n_B)
       }
       u_t       <- tanh(((mean_B - mean_A) / se_diff) / k)
-      social_lo <- log((social_B + 0.1) / (social_A + 0.1))
+      social_lo <- log((social_B + smooth) / (social_A + smooth))
       s_t       <- tanh(social_lo)
       s_abs_v <- c(s_abs_v, abs(s_t))
       align_v <- c(align_v, u_t * s_t)
@@ -552,13 +558,20 @@ replay_social_group <- function(seg, k) {
   tibble(s_abs = s_abs_v, align = align_v)
 }
 
-social_tbl <- df_sampling_group |>
-  group_by(trial_id) |>
-  group_split() |>
-  map(\(seg) replay_social_group(seg, k_pooled)) |>
-  bind_rows()
-# social_scale order: |s_t|, align
-social_scale <- c(s = sd(social_tbl$s_abs), align = sd(social_tbl$align))
+# One replay per smoothing constant: 0.1 for the main models, 1.0 for the
+# *_smooth1.stan variants.
+social_scale_for <- function(smooth) {
+  tbl <- df_sampling_group |>
+    group_by(trial_id) |>
+    group_split() |>
+    map(\(seg) replay_social_group(seg, k_pooled, smooth)) |>
+    bind_rows()
+  # social_scale order: |s_t|, align
+  c(s = sd(tbl$s_abs), align = sd(tbl$align))
+}
+
+social_scale         <- social_scale_for(0.1)
+social_scale_smooth1 <- social_scale_for(1.0)
 
 # Persist the pooled standardization constants so downstream scripts (e.g.
 # 05_visualization.R) can back-calculate model quantities such as pi_copy on the
@@ -568,6 +581,10 @@ saveRDS(
     k            = k_pooled,
     beta_scale   = beta_scale,
     social_scale = social_scale,
+    # Scales matching the smoothing constant 1.0 (*_smooth1.stan variants);
+    # every downstream reconstruction of |s_t| / align for those fits must use
+    # BOTH this scale and log((n_B + 1) / (n_A + 1)).
+    social_scale_smooth1 = social_scale_smooth1,
     outcome_mean = outcome_mean,
     outcome_sd   = outcome_sd,
     t_offset     = t_offset_pooled
@@ -659,6 +676,17 @@ stan_data_group <- df_trials_group %$%
     beta_scale        = as.numeric(beta_scale),
     social_scale      = as.numeric(social_scale)
   )
+
+
+# Same data for the smoothing variants (*_smooth1.stan), which add 1.0 instead
+# of 0.1 to the social counts. Only social_scale changes: |s_t| and align are
+# then computed from log((n_B + 1) / (n_A + 1)), so their unit-SD scales differ.
+# Everything else (k, beta_scale, t_offset, the observations) is shared, so the
+# two families remain LOO-comparable.
+stan_data_group_smooth1 <- modifyList(
+  stan_data_group,
+  list(social_scale = as.numeric(social_scale_smooth1))
+)
 
 
 # Decision biasing model for the group condition (Stan/cmdstanr) ---------------
@@ -788,6 +816,73 @@ if (file.exists(fit_group_full_path)) {
 }
 
 
+# Smoothing variants: social log-odds with +1.0 instead of +0.1 ----------------
+# Exploratory refit of the Full and Decision-biasing models under a weaker
+# smoothing constant. With +0.1 a single predecessor already produces a social
+# log-odds of 2.40; with +1.0 it produces 0.69, so the social signal is shrunk
+# far more when few predecessors have decided. Fitting both lets theta and the
+# social betas be read against a less extreme social-evidence scale, and the
+# two families are LOO-comparable (same observations, same beta_scale / k).
+# The fits are expected to run on a separate server; the cache paths below keep
+# them out of the main pipeline's files.
+# Cache: delete output/fit/fit_group_full_smooth1.rds (resp.
+# fit_group_constant_smooth1.rds) to re-run.
+
+fit_group_full_smooth1_path <- here("output/fit/fit_group_full_smooth1.rds")
+
+if (file.exists(fit_group_full_smooth1_path)) {
+  fit_group_full_smooth1 <- readRDS(fit_group_full_smooth1_path)
+} else {
+  model_group_full_smooth1 <- cmdstan_model(
+    here("function/Stan/group_full_smooth1.stan"),
+    cpp_options = list(stan_threads = TRUE)
+  )
+
+  fit_group_full_smooth1 <- model_group_full_smooth1$sample(
+    data              = stan_data_group_smooth1,
+    seed              = 1,
+    chains            = 4,
+    parallel_chains   = 4,
+    threads_per_chain = 20,
+    iter_warmup       = 2500,
+    iter_sampling     = 2500,
+    refresh           = 100,
+    max_treedepth     = 12,
+    adapt_delta       = 0.95
+  )
+
+  fit_group_full_smooth1$save_object(fit_group_full_smooth1_path)
+}
+
+fit_group_constant_smooth1_path <- here(
+  "output/fit/fit_group_constant_smooth1.rds"
+)
+
+if (file.exists(fit_group_constant_smooth1_path)) {
+  fit_group_constant_smooth1 <- readRDS(fit_group_constant_smooth1_path)
+} else {
+  model_group_constant_smooth1 <- cmdstan_model(
+    here("function/Stan/group_constant_smooth1.stan"),
+    cpp_options = list(stan_threads = TRUE)
+  )
+
+  fit_group_constant_smooth1 <- model_group_constant_smooth1$sample(
+    data              = stan_data_group_smooth1,
+    seed              = 1,
+    chains            = 4,
+    parallel_chains   = 4,
+    threads_per_chain = 20,
+    iter_warmup       = 2500,
+    iter_sampling     = 2500,
+    refresh           = 100,
+    max_treedepth     = 12,
+    adapt_delta       = 0.9
+  )
+
+  fit_group_constant_smooth1$save_object(fit_group_constant_smooth1_path)
+}
+
+
 # LOO-CV: model comparison (group condition) -----------------------------------
 loo_group_full             <- fit_group_full$loo()
 loo_group_constant         <- fit_group_constant$loo()
@@ -808,4 +903,24 @@ save(
   loo_group_value_shaping,
   loo_group_asocial_choice,
   file = here("output/fit/loo.rda")
+)
+
+
+# LOO-CV: smoothing constant 0.1 vs 1.0 ----------------------------------------
+# Kept in a separate .rda so output/fit/loo.rda (read by 05_visualization.R for
+# the published model-comparison figure) keeps exactly the four main models.
+loo_group_full_smooth1     <- fit_group_full_smooth1$loo()
+loo_group_constant_smooth1 <- fit_group_constant_smooth1$loo()
+
+loo_compare(
+  loo_group_full,
+  loo_group_full_smooth1,
+  loo_group_constant,
+  loo_group_constant_smooth1
+)
+
+save(
+  loo_group_full_smooth1,
+  loo_group_constant_smooth1,
+  file = here("output/fit/loo_smooth1.rda")
 )
