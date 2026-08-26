@@ -320,8 +320,8 @@ save_pdf(fig_slope_solo, "fig_slope_solo.pdf", width = 4.2, height = 6.2)
 #
 # Plotting choices:
 #   Sampling — every cue except the intercept.
-#   Stopping — own evidence (|u|), social evidence (|s|), social presence
-#              (social-condition intercept), and confirmation (align).
+#   Stopping — own evidence (|u|), social evidence (|s|), and confirmation
+#              (align).
 #   Consequential choice — split into three free-scale facets (tau / theta /
 #              eta) because the parameters live on different scales: tau is the
 #              choice inverse-temperature (solo + group), theta the social
@@ -351,7 +351,7 @@ param_map <- tribble(
   "Sampling",     "Sampling",         "gamma_discover",        "group",    14,  1,
   "Sampling",     "Sampling",         "gamma_switch",          "group",    15,  1,
   "Sampling",     "Sampling",         "gamma_social",          "group",    16,  1,
-  # --- Stopping (beta): own / social evidence, social presence, confirmation
+  # --- Stopping (beta): own / social evidence, confirmation
   # --- Stopping betas are modeled directly as P(stop) in the Stan models
   # (outcome 1 = stop), so pop_draws_* are already in the P(stop) convention
   # and no sign flip is applied here.
@@ -360,7 +360,6 @@ param_map <- tribble(
   "Stopping",     "Stopping",         "beta_strength",         "solo",      7,  1,
   "Stopping",     "Stopping",         "beta_strength",         "group",     7,  1,
   "Stopping",     "Stopping",         "beta_social_strength",  "group",     8,  1,
-  "Stopping",     "Stopping",         "beta_social_intercept", "group",     9,  1,
   "Stopping",     "Stopping",         "beta_confirm",          "group",    10,  1,
   # --- Consequential choice: tau / theta / eta in separate free-scale facets
   # ---
@@ -379,7 +378,6 @@ param_levels <- c(
   "gamma_social",
   # Stopping (beta_step first so it sits at the top of the panel)
   "beta_step", "beta_strength", "beta_social_strength", "beta_confirm",
-  "beta_social_intercept",
   # Consequential choice
   "tau", "theta",
   "eta_intercept", "eta_strength", "eta_social_strength"
@@ -391,7 +389,6 @@ param_labels <- c(
   beta_step = "Samples drawn\nso far",
   beta_strength = "Personal info\nstrength",
   beta_social_strength = "Social info\nstrength",
-  beta_social_intercept = "Social\npresence",
   beta_confirm = "Personal-social\nalignment",
   # tau / theta sit alone in their facets and are named on the y-axis (their
   # strips are blanked); only the multi-row eta facet keeps a strip label.
@@ -667,14 +664,21 @@ fig_params <- (
     labs(tag = "A")) |
     (plot_param_stage(param_summary, "Stopping", facetted = TRUE,
       x_lab = expression(paste("Estimates (", beta, ")")),
-      # per-facet step from each facet's own range: wide "Sample
-      # size" facet -> 2, the narrow lower facet -> 1.
+      # per-facet step chosen from each facet's own SPAN, so the narrow
+      # lower facet (roughly [0, 0.5]) still gets more than a single
+      # break: wide "Sample size" facet -> 2, narrow lower facet -> 0.2.
       x_breaks = \(limits) {
-        if (max(limits) > 3) {
-          scales::breaks_width(2)(limits)
+        span <- diff(range(limits))
+        step <- if (span > 6) {
+          2
+        } else if (span > 3) {
+          1
+        } else if (span > 1) {
+          0.5
         } else {
-          scales::breaks_width(1)(limits)
+          0.2
         }
+        scales::breaks_width(step)(limits)
       },
       strip_labels = c("Sample size" = "", "Stopping" = "")) +
       labs(tag = "B")) |
