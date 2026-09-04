@@ -37,7 +37,18 @@
 # directly comparable, coefficient by coefficient, with fit_solo and
 # fit_group_full. Run 02_modeling.R first.
 #
-# Cache: delete output/fit/fit_nominal_group_full.rds to re-run the fit.
+# Three models are fitted to the same nominal-group data set, so that LOO can
+# be compared among them (unlike a comparison with the real group condition,
+# which is a different data set):
+#   * solo.stan                 no social information anywhere (asocial null)
+#   * group_asocial_choice.stan social information in the sampling / stopping
+#                               stages, but the consequential choice is purely
+#                               asocial (pi_copy = 0)
+#   * group_full.stan           social information in all stages
+# Each uses the same sampler settings as its counterpart in 02_modeling.R, so
+# the nominal and real posteriors differ only in the data they were fitted to.
+#
+# Cache: delete the corresponding output/fit/fit_nominal_*.rds to re-run a fit.
 # =============================================================================
 
 library(tidyverse)
@@ -217,6 +228,16 @@ stopifnot(
     nrow(distinct(df_social_info_nominal, pseudo_id, option_id, sample_id))
 )
 
+# solo.stan declares no group level and no social information, so it takes the
+# same list minus N_group / group_id / a_chosen / b_chosen / social_scale. It is
+# the asocial null for the LOO comparison below: the identical trials, scored by
+# a model that cannot see the reconstructed social information at all.
+stan_data_nominal_solo <- stan_data_nominal[
+  setdiff(names(stan_data_nominal),
+    c("N_group", "group_id", "a_chosen", "b_chosen", "social_scale"))
+]
+
+
 # Keep the membership draw so the fit can be reproduced / traced back.
 dir.create(here("output/fit"), recursive = TRUE, showWarnings = FALSE)
 saveRDS(
@@ -229,38 +250,87 @@ saveRDS(
 )
 
 
-# Full model fitted to the nominal groups (Stan/cmdstanr) ----------------------
-# Same model file and sampler settings as fit_group_full in 02_modeling.R, so
-# the two posteriors differ only in the data they were fitted to.
+# Models fitted to the nominal groups (Stan/cmdstanr) --------------------------
+# Sampler settings per model match 02_modeling.R (solo.stan runs on the sampler
+# defaults there; both group models use max_treedepth = 12, with adapt_delta
+# 0.9 for group_asocial_choice and 0.95 for group_full), so each nominal fit
+# differs from its real-data counterpart only in the data.
 
-fit_nominal_group_full_path <- here("output/fit/fit_nominal_group_full.rds")
+fit_nominal_model <- function(stan_file, data, path,
+                              adapt_delta = NULL, max_treedepth = NULL) {
+  if (file.exists(path)) return(readRDS(path))
 
-if (file.exists(fit_nominal_group_full_path)) {
-  fit_nominal_group_full <- readRDS(fit_nominal_group_full_path)
-} else {
-  model_group_full <- cmdstan_model(
-    here("function/Stan/group_full.stan"),
+  model <- cmdstan_model(
+    here(stan_file),
     cpp_options = list(stan_threads = TRUE)
   )
 
-  fit_nominal_group_full <- model_group_full$sample(
-    data              = stan_data_nominal,
+  args <- list(
+    data              = data,
     seed              = seed_nominal,
     chains            = 4,
     parallel_chains   = 4,
     threads_per_chain = 20,
     iter_warmup       = 2500,
     iter_sampling     = 2500,
-    refresh           = 100,
-    max_treedepth     = 12,
-    adapt_delta       = 0.95
+    refresh           = 100
   )
+  if (!is.null(adapt_delta))   args$adapt_delta   <- adapt_delta
+  if (!is.null(max_treedepth)) args$max_treedepth <- max_treedepth
 
-  fit_nominal_group_full$save_object(fit_nominal_group_full_path)
+  fit <- do.call(model$sample, args)
+  fit$save_object(path)
+  fit
 }
 
-loo_nominal_group_full <- fit_nominal_group_full$loo()
-saveRDS(loo_nominal_group_full, here("output/fit/loo_nominal_group_full.rds"))
+# Asocial null.
+fit_nominal_solo <- fit_nominal_model(
+  "function/Stan/solo.stan",
+  stan_data_nominal_solo,
+  here("output/fit/fit_nominal_solo.rds")
+)
+
+# Social information in sampling / stopping only; asocial consequential choice.
+fit_nominal_group_asocial_choice <- fit_nominal_model(
+  "function/Stan/group_asocial_choice.stan",
+  stan_data_nominal,
+  here("output/fit/fit_nominal_group_asocial_choice.rds"),
+  adapt_delta   = 0.9,
+  max_treedepth = 12
+)
+
+# Social information in all stages.
+fit_nominal_group_full <- fit_nominal_model(
+  "function/Stan/group_full.stan",
+  stan_data_nominal,
+  here("output/fit/fit_nominal_group_full.rds"),
+  adapt_delta   = 0.95,
+  max_treedepth = 15
+)
+
+
+# LOO-CV: model comparison within the nominal-group data ----------------------
+# All three fits score the same 5,940 trials with a per-trial log_lik covering
+# the same three stages, so they are directly comparable. If the reconstructed
+# social information carries no signal, the two group models should not beat
+# the asocial null here.
+
+loo_nominal_solo                 <- fit_nominal_solo$loo()
+loo_nominal_group_asocial_choice <- fit_nominal_group_asocial_choice$loo()
+loo_nominal_group_full           <- fit_nominal_group_full$loo()
+
+loo_compare(
+  loo_nominal_solo,
+  loo_nominal_group_asocial_choice,
+  loo_nominal_group_full
+)
+
+save(
+  loo_nominal_solo,
+  loo_nominal_group_asocial_choice,
+  loo_nominal_group_full,
+  file = here("output/fit/loo_nominal.rda")
+)
 
 
 # Population-level social parameters: nominal vs real groups -------------------
