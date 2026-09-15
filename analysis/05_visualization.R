@@ -214,7 +214,7 @@ save_pdf(p_rr_l_risky, "coin_rr_l_risky.pdf",
 # condition (trial_type x rare_outcome); within each panel one line per trial
 # (option_id).
 
-# Per-trial panel label: "Option N", where N is the sequential option number
+# Per-trial panel label: "Problem N", where N is the sequential problem number
 # used in the choice-problem table (output/table/options.tex), so that panel
 # numbers and table rows refer to the same problem. With ncol = 9 each row of
 # panels is exactly one trial_type x rare_outcome block.
@@ -223,7 +223,7 @@ panel_order <- df_options |>
   filter(trial_type != "attention_check") |>
   distinct(option_id, option_no, trial_type, rare_outcome) |>
   arrange(option_no) |>
-  mutate(panel_label = sprintf("Option %d", option_no)) |>
+  mutate(panel_label = sprintf("Problem %d", option_no)) |>
   mutate(panel_label = factor(panel_label, levels = panel_label))
 
 add_panel <- function(df) {
